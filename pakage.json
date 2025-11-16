@@ -1,0 +1,19 @@
+{
+  "name": "starprodmarket-backend",
+  "version": "1.0.0",
+  "description": "Backend для StarProdMarket — Telegram login + bot demo",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "cookie-session": "^2.0.0",
+    "dotenv": "^16.0.0",
+    "express": "^4.18.2",
+    "node-telegram-bot-api": "^0.61.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
