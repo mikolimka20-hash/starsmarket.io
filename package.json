@@ -1,0 +1,16 @@
+{
+  "name": "starprodmarket",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.1",
+    "express": "^4.18.2",
+    "dotenv": "^16.4.1",
+    "node-fetch": "^3.3.2",
+    "body-parser": "^1.20.2"
+  }
+}
