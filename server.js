@@ -1,4 +1,3 @@
-// server.js
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -9,12 +8,12 @@ const fetch = require('node-fetch');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const BOT_USERNAME = process.env.BOT_USERNAME;
+const BOT_USERNAME = 'StarProdMarket_bot'; // <-- заменено на ваш бот
 const PAYMENT_PROVIDER_TOKEN = process.env.PAYMENT_PROVIDER_TOKEN;
 const DB_PATH = './db.json';
 
-if (!BOT_TOKEN || !BOT_USERNAME || !PAYMENT_PROVIDER_TOKEN) {
-  console.warn('⚠️ Please set BOT_TOKEN, BOT_USERNAME, PAYMENT_PROVIDER_TOKEN in .env');
+if (!BOT_TOKEN || !PAYMENT_PROVIDER_TOKEN) {
+  console.warn('⚠️ Please set BOT_TOKEN and PAYMENT_PROVIDER_TOKEN in .env');
 }
 
 // --- DB helpers ---
@@ -60,11 +59,10 @@ app.use(express.static('public'));
 
 // --- Routes ---
 
-// Auth redirect from Telegram Login Widget
 app.get('/auth', (req, res) => {
   if (!verifyTelegramLogin(req.query)) return res.status(403).send('Invalid Telegram login');
   const db = loadDB();
-  const data = req.query; // id, first_name, username, photo_url, auth_date, hash
+  const data = req.query;
   const id = String(data.id);
   db.users[id] = db.users[id] || {
     id,
@@ -77,23 +75,18 @@ app.get('/auth', (req, res) => {
   return res.redirect(`/index.html?userId=${encodeURIComponent(id)}`);
 });
 
-// Get user data
+// API to get user
 app.get('/api/user', (req, res) => {
   const db = loadDB();
   const explicitId = req.query.userId;
-  if (explicitId) {
-    const user = db.users[explicitId];
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    return res.json(user);
-  }
-
+  if (explicitId) return res.json(db.users[explicitId] || {});
   const initData = req.headers['x-telegram-initdata'];
   if (!initData) return res.status(400).json({ error: 'No userId or initData' });
   try {
     const params = new URLSearchParams(initData);
     const dataObj = {};
     for (const [k, v] of params) dataObj[k] = v;
-    if (!verifyTelegramLogin(dataObj)) return res.status(403).json({ error: 'Invalid initData signature' });
+    if (!verifyTelegramLogin(dataObj)) return res.status(403).json({ error: 'Invalid initData' });
     const userJson = JSON.parse(dataObj.user);
     const id = String(userJson.id);
     db.users[id] = db.users[id] || {
@@ -117,7 +110,7 @@ app.get('/api/gifts', (req, res) => {
   res.json(gifts);
 });
 
-// Get user's gifts
+// Get my gifts
 app.get('/api/my_gifts', (req, res) => {
   const db = loadDB();
   const explicitId = req.query.userId;
@@ -125,14 +118,13 @@ app.get('/api/my_gifts', (req, res) => {
     const ids = db.users[explicitId]?.gifts || [];
     return res.json(ids.map(id => db.gifts[id]).filter(Boolean));
   }
-
   const initData = req.headers['x-telegram-initdata'];
   if (!initData) return res.status(400).json({ error: 'No initData or userId' });
   try {
     const params = new URLSearchParams(initData);
     const dataObj = {};
     for (const [k,v] of params) dataObj[k]=v;
-    if (!verifyTelegramLogin(dataObj)) return res.status(403).json({ error: 'Invalid initData signature' });
+    if (!verifyTelegramLogin(dataObj)) return res.status(403).json({ error: 'Invalid initData' });
     const userJson = JSON.parse(dataObj.user);
     const id = String(userJson.id);
     const ids = db.users[id]?.gifts || [];
@@ -191,7 +183,7 @@ app.post('/api/purchase', async (req,res)=>{
   } catch(e){ console.error(e); return res.status(500).json({error:'internal'}); }
 });
 
-// Webhook to handle successful payment
+// Webhook
 app.post('/webhook', async (req,res)=>{
   try{
     const update = req.body;
@@ -218,7 +210,7 @@ app.post('/webhook', async (req,res)=>{
   }catch(e){ console.error(e); return res.sendStatus(500); }
 });
 
-// health
 app.get('/health',(req,res)=>res.json({ok:true}));
 
 app.listen(PORT,()=>console.log(`✅ Server running on http://localhost:${PORT}`));
+
