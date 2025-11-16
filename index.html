@@ -63,7 +63,7 @@
 
 <!-- Telegram Login Widget -->
 <script async src="https://telegram.org/js/telegram-widget.js?22"
-  data-telegram-login="StarProdMarket"
+  data-telegram-login="StarProdMarket_bot"
   data-size="medium"
   data-radius="12"
   data-lang="ru"
@@ -71,11 +71,12 @@
 </script>
 
 <script>
-function $q(sel){return document.querySelector(sel)}
-function ce(tag,attrs={}){const e=document.createElement(tag);Object.assign(e,attrs);return e}
+function $q(sel){return document.querySelector(sel);}
+function ce(tag,attrs={}){const e=document.createElement(tag);Object.assign(e,attrs);return e;}
 
+// Плавающие подарки
 function spawnFloating() {
-  const container = document.getElementById('flying-gifts');
+  const container = $q('#flying-gifts');
   const icons = ['https://i.imgur.com/VhYwY7X.png','https://i.imgur.com/uQpI0K3.png','https://i.imgur.com/WyqTq0E.png'];
   for(let i=0;i<10;i++){
     const img=ce('img',{src:icons[Math.floor(Math.random()*icons.length)], className:'gift-float'});
@@ -106,13 +107,11 @@ async function apiGet(path, opts={}) {
 async function loadProfile(){
   if(urlUserId){
     const user=await apiGet(`/api/user?userId=${encodeURIComponent(urlUserId)}`);
-    applyUser(user);
-    return;
+    applyUser(user); return;
   }
   if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData){
     const user=await apiGet('/api/user',{initData:window.Telegram.WebApp.initData});
-    applyUser(user);
-    return;
+    applyUser(user); return;
   }
   applyUser({id:'guest',username:'Гость',avatar:'',stars:0});
 }
@@ -127,15 +126,13 @@ function applyUser(user){
 
 async function loadMarket(){
   const gifts=await apiGet('/api/gifts');
-  const grid=$q('#market-grid');
-  grid.innerHTML='';
+  const grid=$q('#market-grid'); grid.innerHTML='';
   gifts.forEach(g=>{
     const c=ce('div',{className:'card'});
     c.innerHTML=`<h3>${g.name}</h3><div class="muted">${g.description||''}</div><div class="price">${g.stars} ⭐</div>`;
     const btn=ce('button',{className:'btn',innerText:'Купить'});
-    btn.addEventListener('click',()=>purchase(g.id));
-    c.appendChild(btn);
-    grid.appendChild(c);
+    btn.addEventListener('click',()=>addToCart(g.id,g.name,g.stars));
+    c.appendChild(btn); grid.appendChild(c);
   });
 }
 
@@ -144,8 +141,7 @@ async function loadMyGifts(){
   if(urlUserId) gifts=await apiGet(`/api/my_gifts?userId=${encodeURIComponent(urlUserId)}`);
   else if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) gifts=await apiGet('/api/my_gifts',{initData:window.Telegram.WebApp.initData});
   else gifts=[];
-  const grid=$q('#my-grid');
-  grid.innerHTML='';
+  const grid=$q('#my-grid'); grid.innerHTML='';
   gifts.forEach(g=>{
     const c=ce('div',{className:'card'});
     c.innerHTML=`<h3>${g.name}</h3><div class="muted">${g.description||''}</div><div class="price">${g.stars} ⭐</div>`;
@@ -155,8 +151,7 @@ async function loadMyGifts(){
       await fetch('/api/sell_gift',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:g.id,priceStars:g.stars})});
       loadMyGifts(); loadMarket();
     });
-    c.appendChild(sellBtn);
-    grid.appendChild(c);
+    c.appendChild(sellBtn); grid.appendChild(c);
   });
 }
 
@@ -170,16 +165,19 @@ async function createGiftUI(){
 }
 
 function addToCart(gid,name,stars){CART.push({gid,name,stars}); renderCart();}
-function renderCart(){const el=$q('#cart-items'); if(!CART.length){el.textContent='Пусто';return;} el.innerHTML=CART.map(i=>`<div>• ${i.name} — ${i.stars} ⭐</div>`).join('');}
+function renderCart(){
+  const el=$q('#cart-items'); if(!CART.length){el.textContent='Пусто';return;}
+  el.innerHTML=CART.map(i=>`<div>• ${i.name} — ${i.stars} ⭐</div>`).join('');
+}
 
-$q('#clear').addEventListener('click',()=>{CART=[];renderCart();});
+$q('#clear').addEventListener('click',()=>{CART=[]; renderCart();});
 $q('#checkout').addEventListener('click',async ()=>{
   if(!CART.length)return alert('Корзина пуста');
   if(!USER||!USER.id)return alert('Войдите через Telegram');
   const item=CART[0];
   const resp=await fetch('/api/purchase',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({buyerId:USER.id,giftId:item.gid})});
   const data=await resp.json();
-  if(data.ok){alert('Счёт отправлен в Telegram. Завершите оплату в Telegram.');CART=[];renderCart();}
+  if(data.ok){alert('Счёт отправлен в Telegram. Завершите оплату в Telegram.'); CART=[]; renderCart();}
   else alert('Ошибка: '+(data.error||'unknown'));
 });
 
@@ -190,3 +188,4 @@ $q('#create-gift').addEventListener('click',createGiftUI);
 </script>
 </body>
 </html>
+
